@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: SCS_KONVERTER
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PW}
+
+    ports:
+    - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+volumes:
+ postgres_data:
+
