@@ -19,7 +19,7 @@ def add_user(name: str, email: str, hashed_password: str) -> str:
             if email_exist:
                 return "email in use"
             
-            cur.execute("INSERT INTO users(name, email, password, admin) VALUES (%s,%s,%s,%s) RETURNING id",
+            cur.execute("INSERT INTO users(name, email, hashed_password, admin) VALUES (%s,%s,%s,%s) RETURNING id",
                         (name,email,hashed_password,False))
             id_new = cur.fetchone()
             if id_new is not None:
@@ -35,3 +35,19 @@ def del_user(user_id: int) -> bool:
             if del_id is None:
                 return False
             return True
+
+def show_users():
+    list_users = []
+    with open_db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id,name,email,admin FROM users")
+            users = cur.fetchall()
+            for user in users:
+                list_users.append(
+                    {"id": user[0],
+                     "name": user[1],
+                     "email": user[2],
+                     "admin": user[3]}
+                )
+
+            return list_users

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from datenbank.SQL_db import del_user, add_user
+from datenbank.SQL_db import del_user, add_user, show_users
 from pydantic import BaseModel
 from pwdlib import PasswordHash
 
@@ -11,6 +11,14 @@ class UserCreate(BaseModel):
     name: str
     email: str
     password: str
+
+class UserShowResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    admin: bool
+
+
 
 @app.get("/health/live")
 def health_live():
@@ -38,3 +46,9 @@ def adding_user(user: UserCreate):
 @app.delete("/user/del/{user_id}")
 def deleting_user(user_id: int):
     return del_user(user_id)
+
+
+@app.get("/users/show", response_model=list[UserShowResponse])
+def showing_users():
+    users = show_users()
+    return users
