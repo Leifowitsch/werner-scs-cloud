@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from datenbank.SQL_db import del_user, add_user, show_users, add_licence, show_licence
 from pydantic import BaseModel
-from pwdlib import PasswordHash
+from functions.password_hasher import hashing_password
 from datetime import date, datetime
+from functions.password_verifyer import verifying_pw
 
-password_hash = PasswordHash.recommended()
+
 app = FastAPI()
 
 class UserCreate(BaseModel):
@@ -31,6 +32,10 @@ class LicenceShowResponse(BaseModel):
     active: bool
     created_at: datetime
 
+class LoginData(BaseModel):
+    email: str
+    password: str
+
 
 
 @app.get("/health/live")
@@ -39,7 +44,7 @@ def health_live():
 
 @app.post("/user/add")
 def adding_user(user: UserCreate):
-    hashed_password = password_hash.hash(user.password)
+    hashed_password = hashing_password(user.password)
     code = add_user(user.name, user.email, hashed_password)
 
     match code:
@@ -88,3 +93,29 @@ def adding_licence(licence: LicenceCreate):
 def showing_licence():
     licences = show_licence()
     return licences
+
+@app.post("/user/login")
+def login(login_data: LoginData):
+    code = verifying_pw(login_data.email, login_data.password)
+
+    match code:
+        case "User mit dieser email existiert nicht":
+            raise HTTPException(status_code=401,
+                            detail="Invalid email or password")
+        
+        case "User hat keine gültige Lizenz":
+            raise HTTPException(status_code=403,
+                detail="This Email does not have a valid license")
+
+        case "Eingeloggt":
+            return {"detail": "You are logged in!"}
+
+        case "Falsches Passwort":
+            raise HTTPException(status_code=401,
+                detail="Invalid email or password")
+
+        case _:  
+            raise HTTPException(status_code=500,
+                                detail="Something happend that we didnt Expect")
+
+

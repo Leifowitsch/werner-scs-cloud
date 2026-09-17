@@ -31,6 +31,8 @@ def add_user(name: str, email: str, hashed_password: str) -> str:
 def del_user(user_id: int) -> bool:
     with open_db_conn() as conn:
         with conn.cursor() as cur:
+            cur.execute("DELETE FROM lizenzen WHERE user_id = %s",
+                        (user_id, ))
             cur.execute("DELETE FROM users WHERE id = %s RETURNING id",
                         (user_id, ))
             del_id = cur.fetchone()
@@ -86,16 +88,27 @@ def show_licence():
 
             return list_licence
 
-def get_user_verifying():
-        list_users = []
+def get_user_verifying(email: str):
+        list_licenses = []
         with open_db_conn() as conn:
             with conn.cursor() as cur:
-                cur.execute("SELECT id,email,hashed_password FROM users")
-                users = cur.fetchall()
-                for user in users:
-                    list_users.append(
-                    {"id": user[0],
-                     "email": user[1],
-                     "hashed_password": user[2]}
-                )
-                return list_users
+                cur.execute("SELECT id,email,hashed_password FROM users WHERE email = %s",
+                            (email, ))
+                user = cur.fetchone()
+                if user is not None:
+                    user_dict = {
+                    "id": user[0],
+                    "email": user[1],
+                    "hashed_password": user[2]
+                             }
+                    cur.execute("SELECT valid_from,valid_until,active FROM lizenzen WHERE user_id = %s",
+                                (user[0], ))
+                    licences = cur.fetchall()
+                    for licence in licences:
+                        list_licenses.append(
+                        {"valid_from": licence[0],
+                        "valid_until": licence[1],
+                        "active": licence[2]}
+                    )
+                    return (user_dict, list_licenses)
+                return "No user with this email"
