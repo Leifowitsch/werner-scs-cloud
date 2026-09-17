@@ -1,5 +1,7 @@
 import psycopg
 import os
+from datetime import date
+
 
 def open_db_conn():
     return psycopg.connect(
@@ -51,3 +53,49 @@ def show_users():
                 )
 
             return list_users
+
+
+def add_licence(user_id: int, valid_from: date, valid_until: date):
+    if valid_from > valid_until:
+        return "Invalid date range"
+    with open_db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO lizenzen(user_id,valid_from,valid_until) VALUES(%s,%s,%s) RETURNING id",
+                        (user_id,valid_from,valid_until))
+            id_new = cur.fetchone()
+            if id_new is not None:
+                return "licence added"
+            return "licence not added"
+
+def show_licence():
+    list_licence = []
+    with open_db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id,user_id,valid_from,valid_until,active,created_at FROM lizenzen")
+            licences = cur.fetchall()
+            for licence in licences:
+                list_licence.append(
+                    {"id": licence[0],
+                     "user_id": licence[1],
+                     "valid_from": licence[2],
+                     "valid_until": licence[3],
+                     "active": licence[4],
+                     "created_at": licence[5]
+                     }
+                )
+
+            return list_licence
+
+def get_user_verifying():
+        list_users = []
+        with open_db_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id,email,hashed_password FROM users")
+                users = cur.fetchall()
+                for user in users:
+                    list_users.append(
+                    {"id": user[0],
+                     "email": user[1],
+                     "hashed_password": user[2]}
+                )
+                return list_users
