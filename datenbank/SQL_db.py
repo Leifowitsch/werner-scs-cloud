@@ -112,3 +112,16 @@ def get_user_verifying(email: str):
                     )
                     return (user_dict, list_licenses)
                 return "No user with this email"
+
+
+def is_admin(user_id: int):
+    with open_db_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT admin FROM users WHERE id = %s",
+                                (user_id, ))
+                    admin_tup = cur.fetchone()
+                    if admin_tup is None:
+                        return False
+                    if admin_tup[0]:
+                        return True
+                    return False
