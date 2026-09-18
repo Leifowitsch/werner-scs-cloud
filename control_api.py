@@ -1,9 +1,10 @@
 from fastapi import FastAPI, HTTPException
-from datenbank.SQL_db import del_user, add_user, show_users, add_licence, show_licence
+from datenbank.SQL_db import del_user, add_user, show_users, add_licence, show_licence, get_user_verifying
 from pydantic import BaseModel
 from functions.password_hasher import hashing_password
 from datetime import date, datetime
 from functions.password_verifyer import verifying_pw
+from functions.create_acces_token import create_token
 
 
 app = FastAPI()
@@ -108,7 +109,23 @@ def login(login_data: LoginData):
                 detail="This Email does not have a valid license")
 
         case "Eingeloggt":
-            return {"detail": "You are logged in!"}
+            user_data = get_user_verifying(login_data.email)
+            if isinstance(user_data, str):
+                    raise HTTPException(
+                    status_code=500,
+                    detail="Unexpected internal state"
+                    )
+            token = create_token(user_data[0]["id"])
+
+            if token:
+                return {"detail": "You are logged in!",
+                        "access_token": token,
+                        "token_type": "bearer"}
+            else:
+                raise HTTPException(
+                        status_code=500,
+                        detail="Unexpected internal state"
+                        )
 
         case "Falsches Passwort":
             raise HTTPException(status_code=401,
