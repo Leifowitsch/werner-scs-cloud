@@ -7,6 +7,7 @@ from functions.password_verifyer import verifying_pw
 from functions.create_acces_token import create_token
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from functions.token_verifyer import verify_token
+from datenbank.SQL_db_update_exe import get_active_release, add_release, activate_version,show_versions ,ReleaseAlreadyExistsError, ReleaseNotActiveError, ReleaseNotAddedError, ReleaseNotFoundError, NoActiveVersionError, MultActiveVersionError
 
 security = HTTPBearer()
 app = FastAPI()
@@ -35,36 +36,54 @@ class LicenceShowResponse(BaseModel):
     active: bool
     created_at: datetime
 
+class ReleaseShowResponse(BaseModel):
+        version: str
+        release_date: datetime
+        size: int
+        location: str
+        checksum: str
+        active: bool
+
 class LoginData(BaseModel):
     email: str
     password: str
 
+class AddRelease(BaseModel):
+    version: str
+    location: str
+
+def token_handler(token_sub):
+    if isinstance(token_sub,int):
+        return token_sub
+    match token_sub:
+            case "Token abgelaufen":
+                raise HTTPException(status_code=401,
+                                    detail="Token expired")
+            case "Token ist invalide":
+                raise HTTPException(status_code=401,
+                                    detail="Token Not Valid")
+            case "Ein fehler ist aufgetreten, bei verify Token":
+                raise HTTPException(status_code=500,
+                                    detail="Something Went Wrong Handling The Token")
+            case "JWT_SECRET fehlt":
+                raise HTTPException(status_code=500,
+                                    detail="JWT Secret Is Missing")
+            case _: 
+                raise HTTPException(status_code=500,
+                                    detail="Somethin Went Wrong Verifying your Token")
+
+
+def verify_login(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    user_id = token_handler(verify_token(credentials.credentials))
+    return user_id
 
 
 def verify_admin(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    token_sub = verify_token(token)
-    if isinstance(token_sub,int):
-        if is_admin(token_sub):
-            return True
-        raise HTTPException(status_code=403,
-                            detail="Not An Admin")
-    match token_sub:
-        case "Token abgelaufen":
-            raise HTTPException(status_code=401,
-                                detail="Token expired")
-        case "Token ist invalide":
-            raise HTTPException(status_code=401,
-                                detail="Token Not Valid")
-        case "Ein fehler ist aufgetreten, bei verify Token":
-            raise HTTPException(status_code=500,
-                                detail="Something Went Wrong Handling The Token")
-        case "JWT_SECRET fehlt":
-            raise HTTPException(status_code=500,
-                                detail="JWT Secret Is Missing")
-        case _: 
-            raise HTTPException(status_code=500,
-                                detail="Somethin Went Wrong Verifying your Token")
+    user_id = verify_login(credentials)
+    if is_admin(user_id):
+        return True
+    raise HTTPException(status_code=403,
+                        detail="Not an Admin")
 
 @app.get("/health/live")
 def health_live():
@@ -127,6 +146,7 @@ def showing_licence(_: bool = Depends(verify_admin)):
     return licences
 
 
+
 @app.post("/user/login")
 def login(login_data: LoginData):
     code = verifying_pw(login_data.email, login_data.password)
@@ -166,4 +186,59 @@ def login(login_data: LoginData):
         case _:  
             raise HTTPException(status_code=500,
                                 detail="Something happend that we didnt Expect")
+
+
+@app.get("/exe/version")
+def get_exe_data():
+    try:
+        return get_active_release()
+    except NoActiveVersionError:
+        raise HTTPException(status_code=404,
+                                detail="There Is No Active Version")
+
+    except MultActiveVersionError:
+        raise HTTPException(status_code=500,
+                                detail="Multiple Versions Are Acitve")
+
+
+@app.post("/exe/add")
+def adding_release(data: AddRelease, _: bool = Depends(verify_admin)):
+    try:
+
+
+        add_release(data.version, data.location)
+        return {"detail": "Everything Worked Just Fine!"}
+
+    
+    except ReleaseAlreadyExistsError:
+        raise HTTPException(status_code=409,
+                                detail="This version already exists")
+
+    except ReleaseNotAddedError:
+        raise HTTPException(status_code=500,
+                                detail="This Version could not be released")
+
+
+@app.put("/exe/{version_id}/activate")
+def activate_exe(version_id: str,  _: bool = Depends(verify_admin)):
+    try:
+
+        activate_version(version_id)
+        return {"detail": "Everything Worked Just Fine!"}
+
+    except ReleaseNotFoundError:
+        raise HTTPException(status_code=404,
+                                detail="This version does not exist")
+
+    except ReleaseNotActiveError:
+        raise HTTPException(status_code=500,
+                                detail="This Version could not be activated")
+
+@app.get("/exe/show/versions", response_model=list[ReleaseShowResponse])
+def show_exes(_: bool = Depends(verify_admin)):
+    return show_versions()
+
+
+
+
 
