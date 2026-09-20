@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
-from datenbank.SQL_db import del_user, add_user, show_users, add_licence, show_licence, get_user_verifying, is_admin
+from datenbank.SQL_db import del_user, add_user, show_users, add_licence, show_licence, get_user_verifying, is_admin, get_user_data
 from pydantic import BaseModel
 from functions.password_hasher import hashing_password
 from datetime import date, datetime
@@ -237,6 +237,18 @@ def activate_exe(version_id: str,  _: bool = Depends(verify_admin)):
 @app.get("/exe/show/versions", response_model=list[ReleaseShowResponse])
 def show_exes(_: bool = Depends(verify_admin)):
     return show_versions()
+
+@app.get("/user/info")
+def getting_user_data(user_id: bool = Depends(verify_login)):
+    user_data = get_user_data(user_id)
+    if user_data == "Gibt keinen user mit der id":
+        raise HTTPException(status_code=404,
+                            detail="User does no exist with this id") 
+    elif user_data == "User hat keine Lizenz":
+        raise HTTPException(status_code=403,
+                            detail="User with this id does not have a license") 
+    else:
+        return user_data
 
 
 

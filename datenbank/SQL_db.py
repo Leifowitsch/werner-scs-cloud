@@ -125,3 +125,24 @@ def is_admin(user_id: int):
                     if admin_tup[0]:
                         return True
                     return False
+def get_user_data(user_id):
+    with open_db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id,name,email FROM users WHERE id = %s",
+                        (user_id, ))
+            user = cur.fetchone()
+            if not user:
+                return "Gibt keinen user mit der id"
+            cur.execute("SELECT valid_until FROM lizenzen WHERE user_id = %s",
+                        (user_id, ))
+            lizenz = cur.fetchone()
+            if not lizenz:
+                return "User hat keine Lizenz"
+            user_data = {
+                    "id": user[0],
+                    "name": user[1],
+                    "email": user[2],
+                    "valid_until":lizenz[0]
+                    }
+
+            return user_data
