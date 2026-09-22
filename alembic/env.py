@@ -13,13 +13,16 @@ config = context.config
 
 
 password = os.getenv("POSTGRES_PW")
+docker_db_container = os.getenv("SQL_db_container")
+db_name = os.getenv("POSTGRES_DB")
+postgres_user= os.getenv("POSTGRES_USER")
 
 if password is None:
     raise RuntimeError("POSTGRES_PW is not set")
 
 database_url = (
-    f"postgresql+psycopg://postgres:{password}"
-    f"@localhost:5432/SCS_KONVERTER"
+    f"postgresql+psycopg://{postgres_user}:{password}"
+    f"@{docker_db_container}:5432/{db_name}"
 )
 
 config.set_main_option("sqlalchemy.url", database_url)
