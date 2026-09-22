@@ -13,7 +13,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ABLAUF_ZEIT_MIN: 300
     ports: 
-     - "8000:8000"
+     - "127.0.0.1:8000:8000"
   db-scs:
     image: postgres:17
     environment:
