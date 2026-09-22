@@ -4,10 +4,11 @@ from datetime import date
 
 
 def open_db_conn():
+    db_container = os.getenv("SQL_db_container")
     return psycopg.connect(
-            host="localhost",
+            host=db_container,
             port=5432,
-            dbname="SCS_KONVERTER",
+            dbname="scs-konverter",
             user="postgres",
             password=os.getenv("POSTGRES_PW")
         )

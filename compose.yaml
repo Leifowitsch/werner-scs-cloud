@@ -4,23 +4,23 @@ services:
     build:
       context: .
       dockerfile: dockerfile.control_api
-    enviroment:
-      postgreSQL_password: ${postgreSQL_password}
+    environment:
+      POSTGRES_PW: ${POSTGRES_PW}
       POSTGRES_DB: scs-konverter
       POSTGRES_USER: postgres
       SQL_db_container: db-scs
       PORT_db: 5432
-    command: uvicorn functions.control_api:app --host 0.0.0.0 --port 8000
-    ports: 8000:8000
+      JWT_SECRET: ${JWT_SECRET}
+      ABLAUF_ZEIT_MIN: 300
+    ports: 
+     - "8000:8000"
   db-scs:
     image: postgres:17
     environment:
-      POSTGRES_DB: SCS_KONVERTER
+      POSTGRES_DB: scs-konverter
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PW}
 
-    ports:
-    - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
