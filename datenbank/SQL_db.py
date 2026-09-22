@@ -12,7 +12,7 @@ def open_db_conn():
             password=os.getenv("POSTGRES_PW")
         )
 
-def add_user(name: str, email: str, hashed_password: str) -> str:
+def add_user(name: str, email: str, mnd: str, hashed_password: str) -> str:
     with open_db_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM users WHERE email=%s",
@@ -21,8 +21,8 @@ def add_user(name: str, email: str, hashed_password: str) -> str:
             if email_exist:
                 return "email in use"
             
-            cur.execute("INSERT INTO users(name, email, hashed_password, admin) VALUES (%s,%s,%s,%s) RETURNING id",
-                        (name,email,hashed_password,False))
+            cur.execute("INSERT INTO users(name, email, hashed_password, admin, mnd) VALUES (%s,%s,%s,%s,%s) RETURNING id",
+                        (name,email,hashed_password,False,mnd))
             id_new = cur.fetchone()
             if id_new is not None:
                 return "user added"
@@ -44,14 +44,15 @@ def show_users():
     list_users = []
     with open_db_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id,name,email,admin FROM users")
+            cur.execute("SELECT id,name,email,admin,mnd FROM users")
             users = cur.fetchall()
             for user in users:
                 list_users.append(
                     {"id": user[0],
                      "name": user[1],
                      "email": user[2],
-                     "admin": user[3]}
+                     "admin": user[3],
+                     "mnd": user[4]}
                 )
 
             return list_users
@@ -128,12 +129,12 @@ def is_admin(user_id: int):
 def get_user_data(user_id):
     with open_db_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id,name,email FROM users WHERE id = %s",
+            cur.execute("SELECT id,name,email,mnd,admin FROM users WHERE id = %s",
                         (user_id, ))
             user = cur.fetchone()
             if not user:
                 return "Gibt keinen user mit der id"
-            cur.execute("SELECT valid_until FROM lizenzen WHERE user_id = %s",
+            cur.execute("SELECT valid_until,active FROM lizenzen WHERE user_id = %s",
                         (user_id, ))
             lizenz = cur.fetchone()
             if not lizenz:
@@ -142,7 +143,10 @@ def get_user_data(user_id):
                     "id": user[0],
                     "name": user[1],
                     "email": user[2],
-                    "valid_until":lizenz[0]
+                    "mnd": user[3],
+                    "is_admin": user[4],
+                    "valid_until":lizenz[0],
+                    "active":lizenz[1]
                     }
 
             return user_data

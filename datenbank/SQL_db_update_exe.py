@@ -1,6 +1,7 @@
 from datenbank.SQL_db import open_db_conn
 from pathlib import Path
 import hashlib
+import requests
 
 class ReleaseNotFoundError(Exception):
     pass
@@ -22,25 +23,23 @@ class MultActiveVersionError(Exception):
 
 
 
-def get_file_metadata(location):
-    file_path = Path(location)
-    size = file_path.stat().st_size
+def get_remote_file_metadata(download_url):
+    response = requests.get(download_url, stream=True, timeout=60)
+    response.raise_for_status()
+    size = 0
     sha256 = hashlib.sha256()
-    with open(location,"rb",) as exe:
-        while True:
-            chunk = exe.read(8192)
-            if not chunk:
-                break
+
+    for chunk in response.iter_content(chunk_size=8192):
+        if chunk:
+            size += len(chunk)
             sha256.update(chunk)
 
-
-    checksum =  sha256.hexdigest()
-
+    checksum = sha256.hexdigest()
     return size, checksum
 
 
 
-def add_release(version, location) -> bool:
+def add_release(version, download_url) -> bool:
     with open_db_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT version FROM releases WHERE version = %s",
@@ -48,11 +47,11 @@ def add_release(version, location) -> bool:
             version_exist = cur.fetchone()
             if version_exist:
                 raise ReleaseAlreadyExistsError()
-            size, checksum = get_file_metadata(location)
+            size, checksum = get_remote_file_metadata(download_url)
 
 
             cur.execute("INSERT INTO releases(version, size, location, checksum) VALUES(%s,%s,%s,%s) RETURNING version",
-                        (version, size, location, checksum))
+                        (version, size, download_url, checksum))
             version_added = cur.fetchone()
             if not version_added:
                 raise ReleaseNotAddedError()

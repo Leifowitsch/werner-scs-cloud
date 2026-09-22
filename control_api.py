@@ -16,12 +16,14 @@ class UserCreate(BaseModel):
     name: str
     email: str
     password: str
+    mnd: str
 
 class UserShowResponse(BaseModel):
     id: int
     name: str
     email: str
     admin: bool
+    mnd: str
 
 class LicenceCreate(BaseModel):
     user_id: int
@@ -90,9 +92,9 @@ def health_live():
     return True
 
 @app.post("/user/add")
-def adding_user(user: UserCreate,_: bool = Depends(verify_admin)):
+def adding_user(user: UserCreate):
     hashed_password = hashing_password(user.password)
-    code = add_user(user.name, user.email, hashed_password)
+    code = add_user(user.name, user.email, user.mnd, hashed_password)
 
     match code:
         case "email in use":
@@ -249,8 +251,6 @@ def getting_user_data(user_id: bool = Depends(verify_login)):
                             detail="User with this id does not have a license") 
     else:
         return user_data
-
-
 
 
 
