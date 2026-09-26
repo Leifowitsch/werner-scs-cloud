@@ -1,4 +1,4 @@
-Werner SCS Cloud
+### Werner SCS Cloud ###
 Das Projekt ist die Cloud-Erweiterung für einen bestehenden Windows-SCS-Konverter.
 Der ursprüngliche Konverter war schon vorhanden. Ich habe dazu eine zentrale Control API und die Cloud-Infrastruktur aufgebaut, damit Benutzer, Lizenzen und Programmversionen nicht mehr lokal über einzelne Lizenzdateien verwaltet werden müssen.
 Was das System macht
