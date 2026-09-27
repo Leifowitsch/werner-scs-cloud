@@ -257,6 +257,7 @@ def getting_user_data(user_id: bool = Depends(verify_login)):
 def health_check():
     try:
         is_db_availabale()
+        return {"detail": "Everything is working just Fine and your db and control-api is working!"}
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500,
