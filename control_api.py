@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
-from datenbank.SQL_db import del_user, add_user, show_users, add_licence, show_licence, get_user_verifying, is_admin, get_user_data
+from datenbank.SQL_db import del_user, add_user, show_users, add_licence, show_licence, get_user_verifying, is_admin, get_user_data, is_db_availabale
 from pydantic import BaseModel
 from functions.password_hasher import hashing_password
 from datetime import date, datetime
@@ -253,4 +253,11 @@ def getting_user_data(user_id: bool = Depends(verify_login)):
         return user_data
 
 
-
+@app.get("/health/ready")
+def health_check():
+    try:
+        is_db_availabale()
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500,
+                            detail="The Database is not available")

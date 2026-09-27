@@ -13,6 +13,12 @@ def open_db_conn():
             password=os.getenv("POSTGRES_PW")
         )
 
+def is_db_availabale():
+    with open_db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users")
+            return True
+
 def add_user(name: str, email: str, mnd: str, hashed_password: str) -> str:
     with open_db_conn() as conn:
         with conn.cursor() as cur:
